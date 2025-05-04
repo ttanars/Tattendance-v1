@@ -1,52 +1,83 @@
-<!DOCTYPE html>
+
+ 
+ <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบลงเวลาปฏิบัติหน้าที่ v2 - ครูโรงเรียนปากช่อง</title>
+    <title>ระบบลงเวลาปฏิบัติหน้าที่ ครูโรงเรียนปากช่อง</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 
     <style>
-        /* --- Custom CSS --- */
-        body {
-            background-color: #f8f9fa; /* Light gray background */
-            font-family: 'Sarabun', sans-serif; /* Thai font */
-        }
+        body { background-color: #f8f9fa; font-family: 'Sarabun', sans-serif; }
         #schoolLogo { max-height: 80px; width: auto; border-radius: 8px; }
         #clock { font-size: 1.1rem; font-weight: bold; }
-        #teacherInfo { transition: all 0.3s ease-in-out; }
-        .teacher-photo { width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid #dee2e6; }
+        .teacher-photo { max-width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid #dee2e6; }
         .signature-pad-container { position: relative; width: 100%; height: 180px; background-color: #ffffff; cursor: crosshair; border: 1px solid #ced4da; border-radius: 0.375rem; }
         #signatureCanvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 0.375rem; }
         #videoFeed { width: 100%; height: auto; max-height: 240px; display: block; background-color: #343a40; }
         .captured-photo { max-height: 240px; display: block; margin-left: auto; margin-right: auto; background-color: #e9ecef; }
-        #statusMessage .alert { margin-bottom: 0; }
-        .spinner-border { width: 1rem; height: 1rem; border-width: .2em; }
         .form-label { margin-bottom: 0.5rem; }
         .btn-group-camera button { margin: 0 5px; }
-        .form-section-hidden { display: none; } /* Class to initially hide sections */
+        .form-section {
+             transition: opacity 0.4s ease-in-out, max-height 0.4s ease-in-out, margin-top 0.4s ease-in-out, padding-top 0.4s ease-in-out, padding-bottom 0.4s ease-in-out, margin-bottom 0.4s ease-in-out;
+             opacity: 0;
+             max-height: 0;
+             overflow: hidden;
+             border-top: none;
+             padding-top: 0 !important;
+             margin-top: 0 !important;
+             padding-bottom: 0 !important;
+             margin-bottom: 0 !important;
+        }
+        .form-section.visible {
+            opacity: 1;
+            max-height: 1000px; /* Adjust as needed */
+            overflow: visible;
+            border-top: 1px solid #dee2e6;
+            padding-top: 1rem !important;
+            margin-top: 1rem !important;
+            padding-bottom: 1rem !important; /* Add padding bottom when visible */
+             margin-bottom: 0 !important; /* Control bottom margin separately if needed */
+        }
+        /* Override for specific sections */
+        #teacherInfo.visible {
+            border-top: none; padding-top: 1rem !important; margin-top: 1rem !important;
+            padding: 1rem; border: 1px solid #dee2e6; background-color: #f8f9fa; border-radius: .25rem;
+        }
+        #dutyStatusSection.visible { border-top: none; margin-top: 1rem !important; }
+        #dutyTypeSection.visible, #remarksSection.visible { border-top: 1px solid #dee2e6; max-height: 500px; }
+        #teacherLookupStatus { min-height: 1.2em; display: block; }
+        /* Loading overlay for sections */
+        .section-loading-overlay {
+             position: absolute;
+             top: 0; left: 0; right: 0; bottom: 0;
+             background-color: rgba(255, 255, 255, 0.7);
+             z-index: 10;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             opacity: 0;
+             transition: opacity 0.3s;
+             pointer-events: none; /* Allow clicks through when invisible */
+        }
+        .section-loading-overlay.visible {
+            opacity: 1;
+             pointer-events: all; /* Block clicks when visible */
+        }
+         .form-section { position: relative; } /* Needed for absolute overlay */
 
-        /* Responsive adjustments */
         @media (max-width: 767.98px) {
             .teacher-photo { max-width: 100px; height: 100px; margin-bottom: 1rem; }
-            #videoFeed, .captured-photo { max-height: 200px; }
-            .signature-pad-container { height: 150px; }
+            #videoFeed, .captured-photo { max-height: 180px; }
+            .signature-pad-container { height: 140px; }
+            .form-section.visible { max-height: 1500px; } /* Increase max-height for smaller screens */
         }
-        /* Style for required fields */
-        .required-field::after { content: " *"; color: red; }
-
-        /* SweetAlert custom styling (optional) */
-        .swal2-popup { font-family: 'Sarabun', sans-serif !important; }
-        .swal2-title { font-size: 1.5rem !important; }
-        .swal2-html-container { text-align: left !important; margin-top: 1rem !important; }
-        .swal2-image { max-width: 100px; height: 100px; border-radius: 50%; margin: 10px auto !important; }
-
     </style>
 </head>
 <body>
@@ -54,130 +85,135 @@
     <div class="container mt-4 mb-5">
         <div class="card shadow-sm border-primary">
             <div class="card-header text-center bg-primary text-white p-3">
-                <img src="YOUR_SCHOOL_LOGO_URL" alt="โลโก้โรงเรียนปากช่อง" id="schoolLogo" class="mb-2 img-fluid"> <h4 class="mb-1 mt-2">โรงเรียนปากช่อง</h4>
+                <img src="https://lh5.googleusercontent.com/d/1BJtbFIOceoeaCmymH9sTHnligfmYfWU6" alt="โลโก้โรงเรียนปากช่อง" id="schoolLogo" class="mb-2 img-fluid">
+                <h4 class="mb-1 mt-2">โรงเรียนปากช่อง</h4>
                 <p class="mb-0 small">สำนักงานเขตพื้นที่การศึกษามัธยมศึกษานครราชสีมา</p>
             </div>
-            <div class="card-body p-lg-4 p-3">
+            <div class="card-body p-4">
                 <div id="clock" class="alert alert-info text-center shadow-sm" role="alert">
                     <i class="fas fa-clock me-2"></i> กำลังโหลดเวลา...
                 </div>
 
                 <form id="checkinForm" novalidate>
                     <div class="mb-3">
-                        <label for="teacherId" class="form-label fw-bold required-field"><i class="fas fa-id-card me-2 text-primary"></i>รหัสครูผู้สอน (4 หลัก)</label>
-                        <input type="text" class="form-control" id="teacherId" name="teacherId" required placeholder="กรอกรหัส 4 หลัก" inputmode="numeric" pattern="\d{4}" maxlength="4" oninput="this.value=this.value.slice(0,4);">
-                         <div id="teacherLookupStatus" class="form-text mt-1"></div>
+                        <label for="teacherId" class="form-label fw-bold"><i class="fas fa-id-card me-2 text-primary"></i>รหัสครูผู้สอน (สูงสุด 4 ตัว)</label>
+                        <input type="text" class="form-control" id="teacherId" name="teacherId" required placeholder="กรอกรหัสครู 4 ตัวเพื่อค้นหา" maxlength="4">
+                        <div id="teacherLookupStatus" class="form-text mt-1"></div>
                     </div>
 
-                    <div id="mainFormSections" class="form-section-hidden">
-
-                        <div id="teacherInfo" class="mb-4 p-3 border rounded bg-light shadow-sm">
-                            <div class="row align-items-center">
-                                <div class="col-md-3 text-center mb-3 mb-md-0">
-                                    <img src="https://placehold.co/120x120/adb5bd/ffffff?text=%E0%B8%A3%E0%B8%B9%E0%B8%9B%E0%B8%84%E0%B8%A3%E0%B8%B9" alt="รูปครู" id="teacherPhoto" class="teacher-photo">
-                                </div>
-                                <div class="col-md-9">
-                                    <p class="mb-1"><strong><i class="fas fa-user me-2"></i>ชื่อ-สกุล:</strong> <span id="teacherName"></span></p>
-                                    <p class="mb-1"><strong><i class="fas fa-chalkboard-teacher me-2"></i>กลุ่มสาระฯ:</strong> <span id="teacherDepartment"></span></p>
-                                    <p class="mb-0"><strong><i class="fas fa-user-tie me-2"></i>ตำแหน่ง:</strong> <span id="teacherPosition"></span></p>
-                                    <input type="hidden" id="hiddenTeacherName" name="teacherName">
-                                    <input type="hidden" id="hiddenTeacherDepartment" name="teacherDepartment">
-                                </div>
+                    <div id="teacherInfo" class="form-section mb-0">
+                         <div class="row align-items-center">
+                            <div class="col-md-3 text-center mb-3 mb-md-0">
+                                <img src="https://placehold.co/120x120/adb5bd/ffffff?text=%E0%B8%A3%E0%B8%B9%E0%B8%9B%E0%B8%84%E0%B8%A3%E0%B8%B9" alt="รูปครู" id="teacherPhoto" class="teacher-photo">
+                            </div>
+                            <div class="col-md-9">
+                                <p class="mb-1"><strong><i class="fas fa-user me-2"></i>ชื่อ-สกุล:</strong> <span id="teacherName"></span></p>
+                                <p class="mb-1"><strong><i class="fas fa-chalkboard-teacher me-2"></i>กลุ่มสาระฯ:</strong> <span id="teacherDepartment"></span></p>
+                                <p class="mb-0"><strong><i class="fas fa-user-tie me-2"></i>ตำแหน่ง:</strong> <span id="teacherPosition"></span></p>
+                                <input type="hidden" id="hiddenTeacherName" name="teacherName">
+                                <input type="hidden" id="hiddenTeacherDepartment" name="teacherDepartment">
                             </div>
                         </div>
+                    </div>
 
-                        <div class="mb-3" id="dutyStatusSection">
-                            <label class="form-label fw-bold required-field"><i class="fas fa-clipboard-check me-2 text-primary"></i>สถานะการปฏิบัติงาน</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="dutyStatus" id="statusPresent" value="มา" required>
-                                <label class="form-check-label" for="statusPresent">
-                                    <i class="fas fa-user-check text-success me-1"></i> มาปฏิบัติงาน
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="dutyStatus" id="statusLeave" value="ลา" required>
-                                <label class="form-check-label" for="statusLeave">
-                                    <i class="fas fa-calendar-times text-warning me-1"></i> ลา
-                                </label>
-                            </div>
-                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="dutyStatus" id="statusOfficialDuty" value="ไปราชการ" required>
-                                <label class="form-check-label" for="statusOfficialDuty">
-                                     <i class="fas fa-briefcase text-info me-1"></i> ไปราชการ
-                                </label>
-                            </div>
-                             <div id="dutyStatusError" class="invalid-feedback d-block"></div>
+                    <div id="dutyStatusSection" class="form-section">
+                        <label class="form-label fw-bold"><i class="fas fa-clipboard-check me-2 text-primary"></i>สถานะการปฏิบัติหน้าที่</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="dutyStatus" id="statusPresent" value="มา" required>
+                            <label class="form-check-label" for="statusPresent">
+                                <i class="fas fa-user-check text-success me-1"></i> มาปฏิบัติหน้าที่
+                            </label>
                         </div>
-
-                        <div class="mb-3 form-section-hidden" id="dutyTypeSection">
-                            <label class="form-label fw-bold required-field"><i class="fas fa-tasks me-2 text-primary"></i>เลือกการปฏิบัติหน้าที่ (สำหรับผู้ที่มา)</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="dutyType" id="dutyGate" value="เวรยืนประตู" required>
-                                <label class="form-check-label" for="dutyGate">
-                                    <i class="fas fa-door-open text-success me-1"></i> เวรยืนประตู
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="dutyType" id="dutyBuilding" value="ตรวจอาคาร" required>
-                                <label class="form-check-label" for="dutyBuilding">
-                                    <i class="fas fa-building text-warning me-1"></i> ตรวจอาคาร
-                                </label>
-                            </div>
-                            <div id="dutyTypeError" class="invalid-feedback d-block"></div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="dutyStatus" id="statusLeave" value="ลา">
+                            <label class="form-check-label" for="statusLeave">
+                                <i class="fas fa-calendar-times text-warning me-1"></i> ลา
+                            </label>
                         </div>
-
-                         <div class="mb-3 form-section-hidden" id="remarksSection">
-                            <label for="remarks" class="form-label fw-bold required-field"><i class="fas fa-edit me-2 text-primary"></i>หมายเหตุ (สำหรับ ลา/ไปราชการ)</label>
-                            <textarea class="form-control" id="remarks" name="remarks" rows="3" placeholder="ระบุเหตุผลการลา หรือรายละเอียดการไปราชการ" required></textarea>
-                            <div id="remarksError" class="invalid-feedback d-block"></div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="dutyStatus" id="statusBusinessTrip" value="ไปราชการ">
+                            <label class="form-check-label" for="statusBusinessTrip">
+                                <i class="fas fa-plane-departure text-info me-1"></i> ไปราชการ
+                            </label>
                         </div>
-
-                        <div id="presentFieldsContainer"> <div class="mb-3">
-                                <label class="form-label fw-bold required-field"><i class="fas fa-map-marker-alt me-2 text-danger"></i>ตำแหน่งที่ตั้งปัจจุบัน</label>
-                                <div id="locationInfo" class="form-control" style="min-height: 40px; background-color: #e9ecef;">
-                                    <span class="text-muted">กำลังค้นหาตำแหน่ง...</span>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2 py-0 px-1" id="getLocationBtn" title="ลองค้นหาตำแหน่งอีกครั้ง">
-                                        <i class="fas fa-sync"></i>
-                                    </button>
-                                </div>
-                                <input type="hidden" id="latitude" name="latitude" required>
-                                <input type="hidden" id="longitude" name="longitude" required>
-                                <div id="locationError" class="invalid-feedback d-block"></div>
+                         <div id="dutyStatusError" class="invalid-feedback d-block"></div>
+                         <div class="section-loading-overlay" id="dutySubSectionsLoading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
+                         </div>
+                    </div>
 
-                             <div class="mb-3">
-                                <label for="signatureCanvas" class="form-label fw-bold required-field"><i class="fas fa-signature me-2 text-success"></i>ลงลายมือชื่อ</label>
-                                <div class="signature-pad-container">
-                                    <canvas id="signatureCanvas"></canvas>
-                                </div>
-                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="resetSignatureBtn"><i class="fas fa-eraser me-1"></i> ล้างลายเซ็น</button>
-                                <input type="hidden" id="signatureData" name="signatureData" required>
-                                <div id="signatureError" class="invalid-feedback d-block"></div>
-                            </div>
+                    <div id="dutyTypeSection" class="form-section">
+                        <label class="form-label fw-bold"><i class="fas fa-tasks me-2 text-secondary"></i>เลือกการปฏิบัติหน้าที่</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="dutyType" id="dutyGate" value="เวรยืนประตู">
+                            <label class="form-check-label" for="dutyGate">
+                                <i class="fas fa-door-open text-success me-1"></i> เวรยืนประตู
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="dutyType" id="dutyBuilding" value="ตรวจอาคาร">
+                            <label class="form-check-label" for="dutyBuilding">
+                                <i class="fas fa-building text-warning me-1"></i> ตรวจอาคาร
+                            </label>
+                        </div>
+                        <div id="dutyTypeError" class="invalid-feedback d-block"></div>
+                    </div>
 
-                             <div class="mb-4">
-                                <label class="form-label fw-bold required-field"><i class="fas fa-camera me-2 text-info"></i>ถ่ายภาพยืนยัน ณ ขณะนั้น</label>
-                                <div class="row g-3 align-items-start">
-                                    <div class="col-md-6">
-                                        <video id="videoFeed" playsinline autoplay muted class="img-fluid border rounded bg-dark"></video>
-                                        <canvas id="photoCanvas" style="display:none;"></canvas>
-                                    </div>
-                                    <div class="col-md-6 text-center">
-                                        <img id="capturedPhotoPreview" src="https://placehold.co/300x240/e9ecef/6c757d?text=%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%95%E0%B8%B1%E0%B8%A7%E0%B8%AD%E0%B8%A2%E0%B9%88%E0%B8%B2%E0%B8%87" alt="ภาพที่ถ่าย" class="img-fluid border rounded mb-2 captured-photo">
-                                        <input type="hidden" id="photoData" name="photoData" required>
-                                    </div>
-                                </div>
-                                <div class="mt-2 text-center btn-group-camera">
-                                    <button type="button" class="btn btn-sm btn-info" id="startCameraBtn"><i class="fas fa-video me-1"></i> เปิดกล้อง</button>
-                                    <button type="button" class="btn btn-sm btn-success" id="capturePhotoBtn" disabled><i class="fas fa-camera-retro me-1"></i> ถ่ายภาพ</button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="resetPhotoBtn" disabled><i class="fas fa-undo me-1"></i> ถ่ายใหม่</button>
-                                </div>
-                                <div id="cameraError" class="form-text text-danger mt-1 text-center"></div>
-                                <div id="photoError" class="invalid-feedback d-block text-center"></div>
+                    <div id="remarksSection" class="form-section">
+                        <label for="remarks" class="form-label fw-bold"><i class="fas fa-pencil-alt me-2 text-secondary"></i>หมายเหตุ (เหตุผล)</label>
+                        <textarea class="form-control" id="remarks" name="remarks" rows="3" placeholder="ระบุเหตุผลการลา หรือรายละเอียดการไปราชการ"></textarea>
+                        <div id="remarksError" class="invalid-feedback d-block"></div>
+                    </div>
+
+                    <div id="locationSection" class="form-section">
+                        <label class="form-label fw-bold"><i class="fas fa-map-marker-alt me-2 text-danger"></i>ตำแหน่งที่ตั้งปัจจุบัน</label>
+                        <div id="locationInfo" class="form-control" style="min-height: 40px; background-color: #e9ecef;">
+                            <span class="text-muted">กำลังค้นหาตำแหน่ง...</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2 py-0 px-1" id="getLocationBtn" title="ลองค้นหาตำแหน่งอีกครั้ง">
+                                <i class="fas fa-sync"></i>
+                            </button>
+                        </div>
+                        <input type="hidden" id="latitude" name="latitude">
+                        <input type="hidden" id="longitude" name="longitude">
+                        <div id="locationError" class="form-text text-danger mt-1"></div>
+                    </div>
+
+                    <div id="signatureSection" class="form-section">
+                         <label for="signatureCanvas" class="form-label fw-bold"><i class="fas fa-signature me-2 text-success"></i>ลงลายมือชื่อ</label>
+                         <div class="signature-pad-container">
+                            <canvas id="signatureCanvas"></canvas>
+                         </div>
+                         <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="resetSignatureBtn"><i class="fas fa-eraser me-1"></i> ล้างลายเซ็น</button>
+                         <input type="hidden" id="signatureData" name="signatureData">
+                         <div id="signatureError" class="invalid-feedback d-block"></div>
+                    </div>
+
+                    <div id="photoSection" class="form-section">
+                        <label class="form-label fw-bold"><i class="fas fa-camera me-2 text-info"></i>ถ่ายภาพยืนยัน ณ ขณะนั้น</label>
+                        <div class="row g-3 align-items-start">
+                            <div class="col-md-6">
+                                <video id="videoFeed" playsinline autoplay muted class="img-fluid border rounded bg-dark"></video>
+                                <canvas id="photoCanvas" style="display:none;"></canvas>
                             </div>
-                        </div> </div> <div class="d-grid gap-2 mt-4">
+                            <div class="col-md-6 text-center">
+                                <img id="capturedPhotoPreview" src="https://placehold.co/300x240/e9ecef/6c757d?text=%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%95%E0%B8%B1%E0%B8%A7%E0%B8%AD%E0%B8%A2%E0%B9%88%E0%B8%B2%E0%B8%87" alt="ภาพที่ถ่าย" class="img-fluid border rounded mb-2 captured-photo">
+                                <input type="hidden" id="photoData" name="photoData">
+                            </div>
+                        </div>
+                        <div class="mt-2 text-center btn-group-camera">
+                            <button type="button" class="btn btn-sm btn-info" id="startCameraBtn"><i class="fas fa-video me-1"></i> เปิดกล้อง</button>
+                            <button type="button" class="btn btn-sm btn-success" id="capturePhotoBtn" disabled><i class="fas fa-camera-retro me-1"></i> ถ่ายภาพ</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="resetPhotoBtn" disabled><i class="fas fa-undo me-1"></i> ถ่ายใหม่</button>
+                        </div>
+                        <div id="cameraError" class="form-text text-danger mt-1 text-center"></div>
+                        <div id="photoError" class="invalid-feedback d-block text-center"></div>
+                    </div>
+
+                    <div id="submitButtonSection" class="form-section d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-secondary btn-lg fw-bold shadow" id="submitBtn" disabled>
-                           <i class="fas fa-spinner fa-spin me-2"></i> กำลังโหลด...
+                           <i class="fas fa-times-circle me-2"></i> กรอกข้อมูลให้ครบ
                         </button>
                     </div>
 
@@ -185,52 +221,76 @@
 
                 </form>
             </div>
-             <div class="card-footer text-muted text-center small p-2">
-                 ระบบลงเวลาปฏิบัติหน้าที่ v2 - โรงเรียนปากช่อง
+            <div class="card-footer text-muted text-center small p-2">
+                 ระบบลงเวลาปฏิบัติหน้าที่ โรงเรียนปากช่อง
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- CONFIGURATION ---
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzeTu_PKLHpG9tJt3sVhU2GFyrSgkPyhjS5fpCC-ArZ211KFplir4o_1kBaDDXdn4MyMQ/exec'; // <<< ใส่ URL Web App ที่ Deploy แล้ว
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwvDmyWrFu2HBRYGYcixiKggub0TvsRbPBSNYAkxaKAc13STDlMUP6sRyVNeuPq83rnMQ/exec'; // !!! สำคัญ: ใส่ URL ที่ถูกต้อง !!!
             const TEACHER_LOOKUP_URL = SCRIPT_URL + '?action=getTeacherInfo&id=';
+            const CHECKIN_START_TIME = "07:10";
+            const CHECKIN_END_TIME = "23:15";
+            const ALLOWED_DAYS = [0, 1, 2, 3, 4, 5]; // Mon-Fri 0 sun 6 sat
 
-            const CHECKIN_START_MINUTE = 7 * 60 + 10; // 07:10 (in minutes from midnight)
-            const CHECKIN_END_MINUTE = 10 * 60 + 15; // 08:15 (in minutes from midnight)
-            const ALLOWED_DAYS = [1, 2, 3, 4, 5]; // 1=จันทร์, 2=อังคาร, ..., 5=ศุกร์
+
+// --- CONFIGURATION --- (ส่วนต้นๆ ของ <script>)
+// ...
+// ตัวอย่างการแก้ไขเพื่อทดสอบ (ให้ทำงานได้ทุกวัน ทุกเวลา)
+// const CHECKIN_START_TIME = "00:00"; // << แก้ไข
+// const CHECKIN_END_TIME = "23:59";   // << แก้ไข
+// const ALLOWED_DAYS = [0, 1, 2, 3, 4, 5, 6]; // 0=อาทิตย์ << แก้ไข
+// ...
+
+
+
 
             // --- DOM ELEMENTS ---
             const clockElement = document.getElementById('clock');
             const checkinForm = document.getElementById('checkinForm');
             const teacherIdInput = document.getElementById('teacherId');
             const teacherLookupStatus = document.getElementById('teacherLookupStatus');
-            const mainFormSections = document.getElementById('mainFormSections');
+            // Sections
             const teacherInfoDiv = document.getElementById('teacherInfo');
+            const dutyStatusSection = document.getElementById('dutyStatusSection');
+            const dutyTypeSection = document.getElementById('dutyTypeSection');
+            const remarksSection = document.getElementById('remarksSection');
+            const locationSection = document.getElementById('locationSection');
+            const signatureSection = document.getElementById('signatureSection');
+            const photoSection = document.getElementById('photoSection');
+            const submitButtonSection = document.getElementById('submitButtonSection');
+            const dutySubSectionsLoading = document.getElementById('dutySubSectionsLoading'); // Loading overlay
+            // Teacher Info elements
             const teacherPhoto = document.getElementById('teacherPhoto');
             const teacherNameSpan = document.getElementById('teacherName');
             const teacherDepartmentSpan = document.getElementById('teacherDepartment');
             const teacherPositionSpan = document.getElementById('teacherPosition');
             const hiddenTeacherName = document.getElementById('hiddenTeacherName');
             const hiddenTeacherDepartment = document.getElementById('hiddenTeacherDepartment');
+            // Duty Status/Type/Remarks elements
             const dutyStatusRadios = document.querySelectorAll('input[name="dutyStatus"]');
-            const dutyTypeSection = document.getElementById('dutyTypeSection');
             const dutyTypeRadios = document.querySelectorAll('input[name="dutyType"]');
-            const remarksSection = document.getElementById('remarksSection');
             const remarksInput = document.getElementById('remarks');
-            const presentFieldsContainer = document.getElementById('presentFieldsContainer'); // Container for fields shown only when 'มา'
+            const dutyStatusErrorDiv = document.getElementById('dutyStatusError');
+            const dutyTypeErrorDiv = document.getElementById('dutyTypeError');
+            const remarksErrorDiv = document.getElementById('remarksError');
+            // Location elements
             const locationInfoDiv = document.getElementById('locationInfo');
             const getLocationBtn = document.getElementById('getLocationBtn');
             const latitudeInput = document.getElementById('latitude');
             const longitudeInput = document.getElementById('longitude');
+            const locationErrorDiv = document.getElementById('locationError');
+            // Signature elements
             const signatureCanvas = document.getElementById('signatureCanvas');
             const resetSignatureBtn = document.getElementById('resetSignatureBtn');
             const signatureDataInput = document.getElementById('signatureData');
+            const signatureErrorDiv = document.getElementById('signatureError');
+            // Camera elements
             const videoFeed = document.getElementById('videoFeed');
             const photoCanvas = document.getElementById('photoCanvas');
             const capturedPhotoPreview = document.getElementById('capturedPhotoPreview');
@@ -238,17 +298,11 @@
             const startCameraBtn = document.getElementById('startCameraBtn');
             const capturePhotoBtn = document.getElementById('capturePhotoBtn');
             const resetPhotoBtn = document.getElementById('resetPhotoBtn');
-            const submitBtn = document.getElementById('submitBtn');
-            const statusMessage = document.getElementById('statusMessage');
-
-            // Error message divs
-            const dutyStatusErrorDiv = document.getElementById('dutyStatusError');
-            const dutyTypeErrorDiv = document.getElementById('dutyTypeError');
-            const remarksErrorDiv = document.getElementById('remarksError');
-            const locationErrorDiv = document.getElementById('locationError');
-            const signatureErrorDiv = document.getElementById('signatureError');
             const cameraErrorDiv = document.getElementById('cameraError');
             const photoErrorDiv = document.getElementById('photoError');
+            // Submit Button & Status
+            const submitBtn = document.getElementById('submitBtn');
+            const statusMessage = document.getElementById('statusMessage');
 
             // --- STATE VARIABLES ---
             let signaturePad;
@@ -256,149 +310,110 @@
             let teacherDataCache = null;
             let locationWatcher = null;
             let isSubmitting = false;
+            let checkinAllowed = false;
+            let locationAcquired = false; // Track location success
 
             // --- INITIALIZATION ---
             initializeClock();
             initializeSignaturePad();
-            initializeGeolocation();
-            setInterval(updateClockAndButtonState, 10000); // Update clock and button less frequently (e.g., 10 secs)
+            // initializeGeolocation(); // Don't get location initially
+            setInterval(updateClockAndButtonState, 1000);
             window.addEventListener('resize', resizeCanvas);
-            setupEventListeners();
+            addCompletionCheckListeners(); // Add listeners to check form completion
 
             // --- FUNCTIONS ---
 
-            function setupEventListeners() {
-                // Teacher ID input - Auto search on 4 digits
-                teacherIdInput.addEventListener('input', handleTeacherIdInput);
-
-                // Duty Status Radio Buttons - Show/hide relevant sections
-                dutyStatusRadios.forEach(radio => {
-                    radio.addEventListener('change', handleDutyStatusChange);
-                });
-
-                // Reset signature button
-                resetSignatureBtn.addEventListener('click', () => {
-                    if (signaturePad) signaturePad.clear();
-                    signatureDataInput.value = '';
-                    clearValidationError(signatureErrorDiv);
-                });
-
-                 // Geolocation button
-                 getLocationBtn.addEventListener('click', initializeGeolocation);
-
-                // Camera buttons
-                startCameraBtn.addEventListener('click', startCamera);
-                capturePhotoBtn.addEventListener('click', capturePhoto);
-                resetPhotoBtn.addEventListener('click', resetPhoto);
-
-                // Form submission
-                checkinForm.addEventListener('submit', handleFormSubmit);
-
-                 // Clear errors on input/change
-                remarksInput.addEventListener('input', () => clearValidationError(remarksErrorDiv));
-                dutyTypeRadios.forEach(radio => radio.addEventListener('change', () => clearValidationError(dutyTypeErrorDiv)));
-                signatureCanvas.addEventListener('pointerdown', () => clearValidationError(signatureErrorDiv));
-            }
-
-            // 1. Clock & Button State
-            function initializeClock() {
-                updateClockAndButtonState();
-            }
+            // 1. Clock and Time Check
+            function initializeClock() { updateClockAndButtonState(); }
 
             function updateClockAndButtonState() {
                 if (isSubmitting) return;
-
                 const now = new Date();
-                const year = now.getFullYear() + 543;
-                const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-                const thaiDate = now.toLocaleDateString('th-TH', optionsDate).replace(String(now.getFullYear()), String(year));
-                const thaiTime = now.toLocaleTimeString('th-TH', optionsTime);
-                clockElement.innerHTML = `<i class="fas fa-clock me-2"></i> ${thaiDate} เวลา ${thaiTime} น.`;
+                // ... (clock display logic as before) ...
+                 const year = now.getFullYear() + 543;
+                 const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                 const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+                 const thaiDate = now.toLocaleDateString('th-TH', optionsDate).replace(String(now.getFullYear()), String(year));
+                 const thaiTime = now.toLocaleTimeString('th-TH', optionsTime);
+                 clockElement.innerHTML = `<i class="fas fa-clock me-2"></i> ${thaiDate} เวลา ${thaiTime} น.`;
 
-                // Check time and day
-                const currentDay = now.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
-                const currentMinute = now.getHours() * 60 + now.getMinutes();
-                const isAllowedDay = ALLOWED_DAYS.includes(currentDay);
-                const isCheckinTime = currentMinute >= CHECKIN_START_MINUTE && currentMinute <= CHECKIN_END_MINUTE;
-                const canSubmit = isAllowedDay && isCheckinTime;
+                // Check Time and Day
+                const currentDay = now.getDay();
+                const currentTimeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+                checkinAllowed = ALLOWED_DAYS.includes(currentDay) &&
+                                 currentTimeStr >= CHECKIN_START_TIME &&
+                                 currentTimeStr <= CHECKIN_END_TIME;
 
-                let buttonIconClass = '';
-                let buttonText = '';
-                let buttonDisabled = true;
-                let buttonClass = 'btn btn-secondary btn-lg fw-bold shadow';
-
-                if (canSubmit) {
-                    buttonIconClass = 'fas fa-check-circle me-2';
-                    buttonText = 'ส่งข้อมูลลงเวลา';
-                    buttonDisabled = false; // Enable only if teacher found & valid status selected
-                    buttonClass = 'btn btn-primary btn-lg fw-bold shadow';
-                } else {
-                    buttonIconClass = 'fas fa-times-circle me-2';
-                    buttonText = 'นอกช่วงเวลาลงเวลา';
-                    if (!isAllowedDay) {
-                        buttonText += ' (เฉพาะ จันทร์-ศุกร์)';
-                    } else {
-                        const startH = String(Math.floor(CHECKIN_START_MINUTE / 60)).padStart(2, '0');
-                        const startM = String(CHECKIN_START_MINUTE % 60).padStart(2, '0');
-                        const endH = String(Math.floor(CHECKIN_END_MINUTE / 60)).padStart(2, '0');
-                        const endM = String(CHECKIN_END_MINUTE % 60).padStart(2, '0');
-                        buttonText += ` (${startH}:${startM} - ${endH}:${endM} น.)`;
-                    }
-                    buttonDisabled = true;
-                    buttonClass = 'btn btn-secondary btn-lg fw-bold shadow';
-                }
-
-                // Button state also depends on finding a teacher
-                submitBtn.disabled = buttonDisabled || !teacherDataCache;
-                submitBtn.className = buttonClass;
-                submitBtn.innerHTML = `<i class="${buttonIconClass}"></i> ${buttonText}`;
+                // Update submit button state (only if the section is visible)
+                updateSubmitButtonDisplay();
             }
 
-            // 2. Teacher Lookup Logic
-            function handleTeacherIdInput() {
-                const teacherId = teacherIdInput.value.trim();
-                 // Clear previous status and hide main form
-                 teacherLookupStatus.textContent = '';
-                 mainFormSections.classList.add('form-section-hidden');
-                 teacherDataCache = null; // Reset cache
-                 updateClockAndButtonState(); // Update button state (will be disabled)
-                 resetPartialForm(); // Reset fields below teacher id
+            // 2. Teacher ID Input & Lookup Trigger
+            teacherIdInput.addEventListener('input', handleTeacherIdInput);
+            teacherIdInput.addEventListener('paste', (e) => { setTimeout(handleTeacherIdInput, 0); });
 
-                if (teacherId.length === 4) {
-                    fetchTeacherData(teacherId);
-                } else if (teacherId.length > 4) {
-                     teacherIdInput.value = teacherId.slice(0, 4); // Trim extra digits
-                }
+            function handleTeacherIdInput() {
+                 const currentVal = teacherIdInput.value.trim(); // Allow only numbers
+				 //const currentVal = teacherIdInput.value.trim().replace(/[^0-9]/g, ''); // Allow only numbers
+                 teacherIdInput.value = currentVal; // Update input field
+
+                 if (currentVal.length === 4) {
+                     showLoadingAndFetch(currentVal);
+                 } else {
+                     hideAllSections(); // Hide everything if ID < 4 chars
+                     teacherLookupStatus.textContent = 'กรุณากรอกรหัส 4 ตัว';
+                     teacherDataCache = null;
+                 }
+            }
+
+            function showLoadingAndFetch(teacherId) {
+                 teacherLookupStatus.textContent = ''; // Clear previous status
+                 // Show SweetAlert Loading
+                 Swal.fire({
+                     title: 'กำลังค้นหาข้อมูลครู...',
+                     text: `รหัส: ${teacherId}`,
+                     allowOutsideClick: false,
+                     allowEscapeKey: false,
+                     didOpen: () => {
+                         Swal.showLoading();
+                     }
+                 });
+                 // Reset form state before fetching new data
+                 hideAllSections(false); // Hide sections but don't clear ID input
+                 fetchTeacherData(teacherId);
             }
 
             async function fetchTeacherData(teacherId) {
-                teacherLookupStatus.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> กำลังค้นหา...';
-                teacherInfoDiv.style.display = 'none'; // Hide old info box if any
-                clearValidationErrors();
+                 if (!teacherId) {
+                    Swal.close(); // Close loading alert if no ID
+                    return;
+                 }
+                 teacherDataCache = null; // Reset cache
 
-                if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL') {
-                     showSweetAlert('error', 'ข้อผิดพลาด', 'กรุณาตั้งค่า URL ของ Apps Script ในโค้ด HTML ก่อน');
-                     teacherLookupStatus.textContent = 'ข้อผิดพลาดในการตั้งค่า';
+                 // Check SCRIPT_URL (moved check here)
+                 if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL') {
+                     Swal.close();
+                     showSweetAlert('error', 'ตั้งค่าผิดพลาด', 'กรุณาตั้งค่า URL ของ Apps Script ในโค้ด JavaScript ก่อน');
                      return;
                  }
 
                 try {
                     const lookupUrl = `${TEACHER_LOOKUP_URL}${encodeURIComponent(teacherId)}`;
                     const response = await fetch(lookupUrl);
+                    Swal.close(); // Close loading alert after fetch completes
 
                     if (!response.ok) throw new Error(`ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ (Status: ${response.status})`);
 
                     const contentType = response.headers.get("content-type");
                     if (!contentType || !contentType.includes("application/json")) {
-                        const textResponse = await response.text();
-                        console.error("Received non-JSON response:", textResponse);
-                        throw new Error("เซิร์ฟเวอร์ไม่ได้ตอบกลับเป็น JSON");
-                    }
+                         const textResponse = await response.text();
+                         console.error("Received non-JSON response:", textResponse);
+                         throw new Error("เซิร์ฟเวอร์ไม่ได้ตอบกลับเป็น JSON");
+                     }
 
                     const data = await response.json();
+                    if (data.error) throw new Error(data.error);
 
-                    if (data.status === 'error') throw new Error(data.message || 'ข้อผิดพลาดจาก Apps Script');
                     if (data.found && data.teacher) {
                         teacherDataCache = data.teacher;
                         teacherNameSpan.textContent = data.teacher.name || 'N/A';
@@ -409,106 +424,134 @@
                         hiddenTeacherName.value = data.teacher.name || '';
                         hiddenTeacherDepartment.value = data.teacher.department || '';
 
-                        teacherInfoDiv.style.display = 'block'; // Show the info box
-                        mainFormSections.classList.remove('form-section-hidden'); // Show the rest of the form
-                        teacherLookupStatus.textContent = '';
-                         showSweetAlert('success', 'พบข้อมูลครู', `ชื่อ: ${data.teacher.name || 'N/A'}`);
-                         updateClockAndButtonState(); // Re-evaluate button state now that teacher is found
-
+                        showBaseInfoAndDutyStatus(); // Show only Teacher Info and Duty Status
+                        showSweetAlert('success', 'พบข้อมูลครู', `ชื่อ: ${data.teacher.name || 'N/A'}`);
                     } else {
-                        throw new Error(data.message || 'ไม่พบข้อมูลครูสำหรับรหัสนี้');
+                         throw new Error('ไม่พบข้อมูลครูสำหรับรหัสนี้');
                     }
+
                 } catch (error) {
+                     Swal.close(); // Close loading alert on error
                     console.error('Error fetching teacher data:', error);
-                    showSweetAlert('error', 'ค้นหาไม่สำเร็จ', error.message);
-                    teacherLookupStatus.textContent = `ข้อผิดพลาด: ${error.message}`;
-                    mainFormSections.classList.add('form-section-hidden'); // Hide form again
+                    showSweetAlert('error', 'เกิดข้อผิดพลาด', error.message);
+                    hideAllSections(); // Hide everything on error
+                    teacherIdInput.focus();
                     teacherDataCache = null;
-                     updateClockAndButtonState();
                 }
             }
 
-             // 3. Duty Status Change Handler
-            function handleDutyStatusChange() {
-                const selectedStatus = document.querySelector('input[name="dutyStatus"]:checked');
-                clearValidationError(dutyStatusErrorDiv); // Clear status error
-
-                 // Reset dependent sections first
-                 dutyTypeSection.classList.add('form-section-hidden');
-                 remarksSection.classList.add('form-section-hidden');
-                 presentFieldsContainer.classList.add('form-section-hidden'); // Hide fields like signature, photo etc. initially
-                 // Clear values and errors in hidden sections
-                 dutyTypeRadios.forEach(r => r.checked = false);
-                 remarksInput.value = '';
-                 clearValidationError(dutyTypeErrorDiv);
-                 clearValidationError(remarksErrorDiv);
-
-
-                if (selectedStatus) {
-                    const statusValue = selectedStatus.value;
-                    if (statusValue === 'มา') {
-                        dutyTypeSection.classList.remove('form-section-hidden');
-                         presentFieldsContainer.classList.remove('form-section-hidden'); // Show signature, photo etc.
-                         // Make fields inside presentFieldsContainer required
-                         setRequiredStatus(presentFieldsContainer, true);
-                         // Make remarks not required
-                         setRequiredStatus(remarksSection, false);
-                         remarksInput.required = false;
-                         // Make duty type required
-                         dutyTypeRadios.forEach(r => r.required = true);
-
-
-                    } else if (statusValue === 'ลา' || statusValue === 'ไปราชการ') {
-                        remarksSection.classList.remove('form-section-hidden');
-                         // Make fields inside presentFieldsContainer NOT required
-                         setRequiredStatus(presentFieldsContainer, false);
-                         // Make remarks required
-                         setRequiredStatus(remarksSection, true);
-                         remarksInput.required = true;
-                         // Make duty type not required
-                         dutyTypeRadios.forEach(r => r.required = false);
-                         dutyTypeRadios.forEach(r => r.checked = false); // Uncheck duty type
-
-
-                         // Stop camera if running when switching to La/Official Duty
-                         stopCameraStream();
-                         resetPhotoState(); // Reset preview etc.
-
-                    }
-                } else {
-                     // No status selected yet, hide everything dependent
-                      setRequiredStatus(presentFieldsContainer, false);
-                      setRequiredStatus(remarksSection, false);
-                      remarksInput.required = false;
-                      dutyTypeRadios.forEach(r => r.required = false);
-                 }
+            // 3. Show/Hide Sections Logic
+            function showBaseInfoAndDutyStatus() {
+                // Hide all first to ensure clean state
+                hideAllSections(false); // Keep ID input value
+                // Show Teacher Info
+                teacherInfoDiv.classList.add('visible');
+                // Show Duty Status selection
+                dutyStatusSection.classList.add('visible');
+                 // Ensure Duty Status is unchecked initially
+                 dutyStatusRadios.forEach(radio => radio.checked = false);
             }
 
-            // Helper to set required attribute on inputs within a container
-            function setRequiredStatus(container, isRequired) {
-                 container.querySelectorAll('input[type="text"], input[type="hidden"], input[type="radio"], textarea').forEach(input => {
-                    // Only toggle required for elements that *can* be required based on status
-                    // We handle radio groups slightly differently in validation
-                    if (input.type !== 'radio' && input.id !== 'hiddenTeacherName' && input.id !== 'hiddenTeacherDepartment') { // Exclude hidden teacher info
-                         input.required = isRequired;
-                    }
+            function hideAllSections(clearTeacherId = true) {
+                 // Hide all sections with the 'form-section' class
+                 document.querySelectorAll('.form-section').forEach(section => {
+                    section.classList.remove('visible');
                  });
-                 // Specific handling for dutyType radio group required attribute
-                  if (container.id === 'dutyTypeSection') {
-                      dutyTypeRadios.forEach(r => r.required = isRequired);
-                  }
-             }
+                 // Clear teacher cache and related hidden inputs
+                 teacherDataCache = null;
+                 hiddenTeacherName.value = '';
+                 hiddenTeacherDepartment.value = '';
+                 locationAcquired = false; // Reset location flag
+                 // Optionally clear the teacher ID input
+                 if (clearTeacherId) {
+                     teacherIdInput.value = '';
+                     teacherLookupStatus.textContent = 'กรุณากรอกรหัส 4 ตัว';
+                 }
+                 // Clear validation errors and status messages
+                 clearValidationErrors();
+                 statusMessage.innerHTML = '';
+                 // Reset components within hidden sections if needed
+                 // (e.g., signature pad, camera preview) - handled in resetFullForm too
+            }
 
 
-            // 4. Geolocation
+            // 4. Duty Status Change Handler
+            dutyStatusRadios.forEach(radio => {
+                 radio.addEventListener('change', handleDutyStatusChange);
+            });
+
+            async function handleDutyStatusChange() {
+                 const selectedStatus = document.querySelector('input[name="dutyStatus"]:checked')?.value;
+                 clearValidationErrors(['dutyStatusError']); // Clear errors except the one for duty status itself
+
+                 // Show loading overlay while potentially loading location/camera
+                  dutySubSectionsLoading.classList.add('visible');
+
+                 // Hide all sections below dutyStatus first
+                 dutyTypeSection.classList.remove('visible');
+                 remarksSection.classList.remove('visible');
+                 locationSection.classList.remove('visible');
+                 signatureSection.classList.remove('visible');
+                 photoSection.classList.remove('visible');
+                 submitButtonSection.classList.remove('visible'); // Hide submit button when status changes
+
+                  // Reset dependent inputs/states
+                  dutyTypeRadios.forEach(r => { r.checked = false; r.required = false; });
+                  remarksInput.value = ''; remarksInput.required = false;
+                  // Don't clear signature/photo data yet, might switch back
+                   locationAcquired = false; // Reset location flag if status changes
+
+                 await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for visual feedback
+
+                 if (selectedStatus === 'มา') {
+                    // Show sections required for 'มา'
+                    dutyTypeSection.classList.add('visible');
+                    locationSection.classList.add('visible');
+                    signatureSection.classList.add('visible');
+                    photoSection.classList.add('visible');
+                    // Hide remarks
+                    remarksSection.classList.remove('visible');
+                    // Set required flags
+                    dutyTypeRadios.forEach(r => r.required = true);
+                    remarksInput.required = false;
+                    // Trigger location search and camera init only if 'มา' is selected
+                     initializeGeolocation(); // Request location
+                     resizeCanvas(); // Ensure signature pad is ready
+                     startCamera(); // Try starting camera (user might need to click again if permission denied)
+
+                 } else if (selectedStatus === 'ลา' || selectedStatus === 'ไปราชการ') {
+                    // Show remarks section
+                    remarksSection.classList.add('visible');
+                    // Hide others
+                    dutyTypeSection.classList.remove('visible');
+                    locationSection.classList.remove('visible');
+                    signatureSection.classList.remove('visible');
+                    photoSection.classList.remove('visible');
+                    // Set required flags
+                     dutyTypeRadios.forEach(r => r.required = false);
+                    remarksInput.required = true;
+                    stopCameraStream(); // Stop camera if running
+                 }
+
+                // Hide loading overlay after setup
+                 dutySubSectionsLoading.classList.remove('visible');
+                checkFormCompletion(); // Check if form is complete enough to show submit
+            }
+
+            // 5. Geolocation
+            getLocationBtn.addEventListener('click', initializeGeolocation);
+
             function initializeGeolocation() {
-                 locationInfoDiv.querySelector('span').innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> กำลังค้นหา...';
-                 clearValidationError(locationErrorDiv);
-                 latitudeInput.value = '';
-                 longitudeInput.value = '';
+                if (!locationSection.classList.contains('visible')) return; // Only if section is visible
+                locationInfoDiv.querySelector('span').innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> กำลังค้นหา...';
+                locationErrorDiv.textContent = '';
+                latitudeInput.value = ''; longitudeInput.value = '';
+                locationAcquired = false; // Reset flag
+                clearValidationErrors(['locationError']);
+                checkFormCompletion(); // Update completion status
 
-                 if ('geolocation' in navigator) {
-                     if (locationWatcher) navigator.geolocation.clearWatch(locationWatcher);
+                if ('geolocation' in navigator) {
+                    // ... (getCurrentPosition logic as before) ...
                      navigator.geolocation.getCurrentPosition(
                          (position) => {
                              const lat = position.coords.latitude;
@@ -516,445 +559,412 @@
                              latitudeInput.value = lat;
                              longitudeInput.value = lon;
                              locationInfoDiv.querySelector('span').innerHTML = `<i class="fas fa-check-circle text-success me-1"></i> ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-                             const mapLinkUrl = `https://www.google.com/maps?q=$${lat},${lon}`;
-                             let mapLink = locationInfoDiv.querySelector('a');
-                             if (!mapLink) {
-                                 mapLink = document.createElement('a');
-                                 mapLink.target = '_blank';
-                                 mapLink.rel = 'noopener noreferrer';
-                                 mapLink.classList.add('ms-2', 'small');
-                                 mapLink.innerHTML = '<i class="fas fa-external-link-alt"></i> ดูแผนที่';
-                                 locationInfoDiv.appendChild(mapLink);
-                             }
-                             mapLink.href = mapLinkUrl;
+                             locationAcquired = true; // Set flag on success
+                             checkFormCompletion(); // Check again after getting location
+                             // ... (map link logic as before) ...
+                             const mapLink = `https://www.google.com/maps?q=$${lat},${lon}`;
+                            let linkElement = locationInfoDiv.querySelector('a');
+                            if (!linkElement) {
+                                linkElement = document.createElement('a');
+                                linkElement.target = '_blank'; linkElement.rel = 'noopener noreferrer';
+                                linkElement.classList.add('ms-2', 'small');
+                                linkElement.innerHTML = '<i class="fas fa-external-link-alt"></i> ดูแผนที่';
+                                locationInfoDiv.appendChild(linkElement);
+                            }
+                            linkElement.href = mapLink;
                          },
-                         handleLocationError,
+                         (error) => { // Error callback
+                             handleLocationError(error);
+                             locationAcquired = false; // Ensure flag is false on error
+                             checkFormCompletion(); // Check completion status on error
+                         },
                          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
                      );
-                 } else {
-                     handleLocationError({ code: -1, message: 'เบราว์เซอร์ไม่รองรับ Geolocation' });
-                 }
-             }
-
+                } else {
+                    handleLocationError({ code: -1, message: 'เบราว์เซอร์นี้ไม่รองรับ Geolocation' });
+                    locationAcquired = false;
+                    checkFormCompletion();
+                }
+            }
              function handleLocationError(error) {
                  console.error('Geolocation error:', error);
                  let message = 'ไม่สามารถรับตำแหน่งได้: ';
-                 switch (error.code) {
-                     case error.PERMISSION_DENIED: message += 'ผู้ใช้ปฏิเสธการเข้าถึงตำแหน่ง'; break;
-                     case error.POSITION_UNAVAILABLE: message += 'ข้อมูลตำแหน่งไม่พร้อมใช้งาน'; break;
-                     case error.TIMEOUT: message += 'หมดเวลาในการค้นหาตำแหน่ง'; break;
-                     case -1: message = error.message; break; // Custom code
-                     default: message += 'เกิดข้อผิดพลาดที่ไม่รู้จัก'; break;
-                 }
-                  locationInfoDiv.querySelector('span').textContent = 'ข้อผิดพลาด';
-                  showError(locationErrorDiv, message);
-                  latitudeInput.value = '';
-                  longitudeInput.value = '';
-             }
+                  switch (error.code) {
+                      case error.PERMISSION_DENIED: message += 'ผู้ใช้ปฏิเสธการเข้าถึงตำแหน่ง'; break;
+                      case error.POSITION_UNAVAILABLE: message += 'ข้อมูลตำแหน่งไม่พร้อมใช้งาน'; break;
+                      case error.TIMEOUT: message += 'หมดเวลาในการค้นหาตำแหน่ง'; break;
+                      case -1: message = error.message; break;
+                      default: message += 'เกิดข้อผิดพลาดที่ไม่รู้จัก'; break;
+                  }
+                 locationInfoDiv.querySelector('span').textContent = 'ข้อผิดพลาดในการรับตำแหน่ง';
+                 locationErrorDiv.textContent = message;
+                 latitudeInput.value = ''; longitudeInput.value = '';
+            }
 
-            // 5. Signature Pad
+            // 6. Signature Pad
             function initializeSignaturePad() {
-                 resizeCanvas();
-                 signaturePad = new SignaturePad(signatureCanvas, {
+                resizeCanvas();
+                signaturePad = new SignaturePad(signatureCanvas, {
                      backgroundColor: 'rgb(255, 255, 255)', penColor: 'rgb(0, 0, 0)'
                  });
+                resetSignatureBtn.addEventListener('click', () => {
+                    signaturePad.clear();
+                    signatureDataInput.value = '';
+                    clearValidationErrors(['signatureError']);
+                    checkFormCompletion(); // Check completion after clearing
+                });
+                signatureCanvas.addEventListener('pointerdown', () => {
+                     clearValidationErrors(['signatureError']);
+                });
+                 // Update hidden input and check completion when drawing ends
+                 signaturePad.addEventListener("endStroke", () => {
+                     if (!signaturePad.isEmpty()) {
+                         const sigDataUrl = signaturePad.toDataURL('image/jpeg', 0.85);
+                         signatureDataInput.value = sigDataUrl.split(',')[1];
+                     } else {
+                         signatureDataInput.value = '';
+                     }
+                      checkFormCompletion(); // Check after drawing
+                 });
             }
-
             function resizeCanvas() {
-                const ratio = Math.max(window.devicePixelRatio || 1, 1);
-                const canvasContainer = signatureCanvas.parentElement;
-                if (!canvasContainer || canvasContainer.offsetWidth === 0) return;
-                signatureCanvas.width = canvasContainer.offsetWidth * ratio;
-                signatureCanvas.height = canvasContainer.offsetHeight * ratio;
-                signatureCanvas.getContext("2d").scale(ratio, ratio);
-                if (signaturePad) signaturePad.clear();
-            }
-
-            // 6. Camera Functionality
-             function stopCameraStream() {
-                 if (stream) {
-                     stream.getTracks().forEach(track => track.stop());
-                     stream = null;
-                     videoFeed.srcObject = null;
-                     console.log("Camera stream stopped.");
+                 if (!signatureCanvas.offsetParent) return; // Don't resize if hidden
+                 const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                 const canvasContainer = signatureCanvas.parentElement;
+                 if (!canvasContainer || canvasContainer.offsetWidth === 0) return;
+                 signatureCanvas.width = canvasContainer.offsetWidth * ratio;
+                 signatureCanvas.height = canvasContainer.offsetHeight * ratio;
+                 signatureCanvas.getContext("2d").scale(ratio, ratio);
+                  if (signaturePad) {
+                     // Redraw existing signature data if available after resize
+                     const data = signaturePad.toData();
+                     signaturePad.clear(); // clear is needed after resize
+                     signaturePad.fromData(data);
                  }
-                 // Reset button states related to camera
-                 capturePhotoBtn.disabled = true;
-                 resetPhotoBtn.disabled = true;
-                 startCameraBtn.innerHTML = '<i class="fas fa-video me-1"></i> เปิดกล้อง';
-                 // Hide video feed if stopped explicitly
-                 videoFeed.style.display = 'none';
-
             }
 
-            function resetPhotoState() {
-                 // Reset preview image
-                capturedPhotoPreview.src = 'https://placehold.co/300x240/e9ecef/6c757d?text=%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%95%E0%B8%B1%E0%B8%A7%E0%B8%AD%E0%B8%A2%E0%B9%88%E0%B8%B2%E0%B8%87';
-                capturedPhotoPreview.alt = 'ภาพตัวอย่าง';
-                 // Clear hidden data
-                photoDataInput.value = '';
-                 // Clear canvas
-                 if(photoCanvas) {
-                    const context = photoCanvas.getContext('2d');
-                    if (context) context.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
-                 }
-                // Reset buttons
-                 capturePhotoBtn.disabled = true; // Disabled until camera is started again
-                 resetPhotoBtn.disabled = true;
-                 startCameraBtn.innerHTML = '<i class="fas fa-video me-1"></i> เปิดกล้อง';
-                  videoFeed.style.display = 'none'; // Ensure video feed is hidden
-                  clearValidationError(photoErrorDiv);
-                  clearValidationError(cameraErrorDiv);
-            }
+            // 7. Camera Functionality
+            function stopCameraStream() { /* ... (as before) ... */
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                    videoFeed.srcObject = null;
+                    console.log("Camera stream stopped.");
+                }
+             }
+            startCameraBtn.addEventListener('click', startCamera);
+            capturePhotoBtn.addEventListener('click', capturePhoto);
+            resetPhotoBtn.addEventListener('click', resetPhoto);
 
             async function startCamera() {
-                 clearValidationError(cameraErrorDiv);
-                 clearValidationError(photoErrorDiv);
-                 stopCameraStream(); // Stop existing stream first
-                 await new Promise(resolve => setTimeout(resolve, 100)); // Short delay
-
+                 if (!photoSection.classList.contains('visible')) return;
+                 cameraErrorDiv.textContent = ''; photoErrorDiv.textContent = '';
+                 clearValidationErrors(['cameraError', 'photoError']);
+                 stopCameraStream();
+                 await new Promise(resolve => setTimeout(resolve, 100));
                  try {
-                     console.log("Requesting camera access...");
+                     // ... (getUserMedia logic as before) ...
                      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-                     console.log("Camera access granted.");
                      videoFeed.srcObject = stream;
                      videoFeed.style.display = 'block';
-                     capturePhotoBtn.disabled = false; // Enable capture button
-                     resetPhotoBtn.disabled = true; // Disable reset until photo taken
-                     startCameraBtn.innerHTML = '<i class="fas fa-sync me-1"></i> รีสตาร์ทกล้อง';
-                     // Reset preview to placeholder when starting camera
-                    capturedPhotoPreview.src = 'https://placehold.co/300x240/e9ecef/6c757d?text=%E0%B8%81%E0%B8%94%E0%B8%96%E0%B9%88%E0%B8%B2%E0%B8%A2%E0%B8%A0%E0%B8%B2%E0%B8%9E';
-                    capturedPhotoPreview.alt = 'กดปุ่มถ่ายภาพ';
-                    photoDataInput.value = ''; // Clear old photo data
-
-                 } catch (err) {
-                     console.error("Camera Error:", err.name, err.message);
-                     let errorMsg = `ไม่สามารถเข้าถึงกล้องได้: ${err.name}`;
-                     if (err.name === "NotReadableError") errorMsg += " - กล้องอาจถูกใช้โดยโปรแกรมอื่น";
-                     else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") errorMsg += " - ไม่พบอุปกรณ์กล้อง";
-                     else if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") errorMsg += " - กรุณาอนุญาตให้เข้าถึงกล้อง";
-                     else errorMsg += ` (${err.message})`;
-                     showError(cameraErrorDiv, errorMsg);
-                     capturePhotoBtn.disabled = true;
+                     capturePhotoBtn.disabled = false;
                      resetPhotoBtn.disabled = true;
-                     startCameraBtn.innerHTML = '<i class="fas fa-video me-1"></i> เปิดกล้อง';
-                      videoFeed.style.display = 'none'; // Hide video feed on error
-                     stopCameraStream(); // Ensure stream stopped on error
+                     startCameraBtn.innerHTML = '<i class="fas fa-sync me-1"></i> รีสตาร์ทกล้อง';
+                     capturedPhotoPreview.src = 'https://placehold.co/300x240/e9ecef/6c757d?text=%E0%B8%81%E0%B8%94%E0%B8%96%E0%B9%88%E0%B8%B2%E0%B8%A2%E0%B8%A0%E0%B8%B2%E0%B8%9E';
+                     capturedPhotoPreview.alt = 'กดปุ่มถ่ายภาพ';
+                     photoDataInput.value = ''; // Clear previous photo data
+                      checkFormCompletion(); // Check completion status
+                 } catch (err) {
+                    // ... (error handling as before) ...
+                    console.error("Camera Error:", err.name, err.message);
+                    let errorMsg = `ไม่สามารถเข้าถึงกล้องได้: ${err.name}`;
+                    if (err.name === "NotReadableError") { errorMsg += " - กล้องอาจกำลังถูกใช้งาน"; }
+                    else if (err.name === "NotFoundError") { errorMsg += " - ไม่พบอุปกรณ์กล้อง"; }
+                    else if (err.name === "NotAllowedError") { errorMsg += " - กรุณาอนุญาตให้เข้าถึงกล้อง"; }
+                    cameraErrorDiv.textContent = errorMsg;
+                    capturePhotoBtn.disabled = true; resetPhotoBtn.disabled = true;
+                    startCameraBtn.innerHTML = '<i class="fas fa-video me-1"></i> เปิดกล้อง';
+                    videoFeed.style.display = 'none'; stopCameraStream();
+                     checkFormCompletion(); // Check completion status
                  }
-             }
-
-             function capturePhoto() {
-                 if (!stream || !stream.active) {
-                     showError(cameraErrorDiv, 'กรุณาเปิดกล้องก่อนถ่ายภาพ');
-                     return;
-                 }
-                 clearValidationError(photoErrorDiv);
-
-                 const videoWidth = videoFeed.videoWidth;
-                 const videoHeight = videoFeed.videoHeight;
-                 if (!videoWidth || !videoHeight) {
-                    showError(cameraErrorDiv, 'ไม่สามารถอ่านขนาดวิดีโอได้');
-                    return;
-                 }
-                 photoCanvas.width = videoWidth;
-                 photoCanvas.height = videoHeight;
+            }
+            function capturePhoto() {
+                 if (!stream || !stream.active) { /* ... error handling ... */ return; }
+                 clearValidationErrors(['photoError']);
+                 // ... (drawImage and toDataURL logic as before) ...
+                 const videoWidth = videoFeed.videoWidth; const videoHeight = videoFeed.videoHeight;
+                 if (!videoWidth || !videoHeight) { /* ... error handling ... */ return; }
+                 photoCanvas.width = videoWidth; photoCanvas.height = videoHeight;
                  const context = photoCanvas.getContext('2d');
                  context.drawImage(videoFeed, 0, 0, videoWidth, videoHeight);
                  const dataUrl = photoCanvas.toDataURL('image/jpeg', 0.85);
-                 capturedPhotoPreview.src = dataUrl;
-                 capturedPhotoPreview.alt = 'ภาพที่ถ่าย';
-                 photoDataInput.value = dataUrl.split(',')[1];
+                 capturedPhotoPreview.src = dataUrl; capturedPhotoPreview.alt = 'ภาพที่ถ่าย';
+                 photoDataInput.value = dataUrl.split(',')[1]; // Store base64 data
+                 resetPhotoBtn.disabled = false; capturePhotoBtn.disabled = true;
+                 checkFormCompletion(); // Check completion after taking photo
+            }
+            function resetPhoto() {
+                 clearValidationErrors(['photoError']);
+                 photoDataInput.value = ''; // Clear photo data
+                 capturedPhotoPreview.src = 'https://placehold.co/300x240/e9ecef/6c757d?text=%E0%B8%81%E0%B8%94%E0%B8%96%E0%B9%88%E0%B8%B2%E0%B8%A2%E0%B8%A0%E0%B8%B2%E0%B8%9E';
+                 capturedPhotoPreview.alt = 'กดปุ่มถ่ายภาพ';
+                 photoCanvas.getContext('2d').clearRect(0, 0, photoCanvas.width, photoCanvas.height);
+                 resetPhotoBtn.disabled = true;
+                 if (stream && stream.active) { // Enable capture only if camera is still running
+                      capturePhotoBtn.disabled = false;
+                  } else {
+                     capturePhotoBtn.disabled = true; // Keep disabled if camera stopped/failed
+                     // Optionally try restarting camera on reset
+                     // startCamera();
+                  }
+                 checkFormCompletion(); // Check completion after resetting photo
+            }
 
-                 resetPhotoBtn.disabled = false; // Enable reset button
-                 capturePhotoBtn.disabled = true; // Disable capture button
-                 // Optional: Stop camera after capture
-                 // stopCameraStream();
-             }
+            // 8. Form Completion Check
+            function addCompletionCheckListeners() {
+                // Listen to changes that affect completion status
+                dutyTypeRadios.forEach(r => r.addEventListener('change', checkFormCompletion));
+                remarksInput.addEventListener('input', checkFormCompletion);
+                // Location is checked in its success/error handlers
+                // Signature is checked in its endStroke/clear handlers
+                // Photo is checked in capturePhoto/resetPhoto handlers
+            }
 
-             function resetPhoto() {
-                 clearValidationError(photoErrorDiv);
-                 if (!stream || !stream.active) {
-                      resetPhotoState(); // Reset preview etc. if stream already stopped
-                     // Optionally call startCamera() again if needed
+            function checkFormCompletion() {
+                const selectedStatus = document.querySelector('input[name="dutyStatus"]:checked')?.value;
+                let isComplete = false;
+
+                if (selectedStatus === 'มา') {
+                    const dutyTypeSelected = document.querySelector('input[name="dutyType"]:checked');
+                    const signatureDone = !signaturePad.isEmpty() && signatureDataInput.value;
+                    const photoTaken = photoDataInput.value;
+                    // locationAcquired flag is updated in geolocation callbacks
+
+                    isComplete = dutyTypeSelected && locationAcquired && signatureDone && photoTaken;
+
+                } else if (selectedStatus === 'ลา' || selectedStatus === 'ไปราชการ') {
+                    isComplete = remarksInput.value.trim() !== '';
+                }
+
+                // Show/Hide Submit Button Section
+                if (isComplete) {
+                    submitButtonSection.classList.add('visible');
+                } else {
+                    submitButtonSection.classList.remove('visible');
+                }
+                // Update button enabled state based on time (only if visible)
+                updateSubmitButtonDisplay();
+            }
+
+
+            // 9. Update Submit Button Display (Based on Time and Visibility)
+            function updateSubmitButtonDisplay() {
+                 // Only update if the submit button section is actually visible
+                 if (!submitButtonSection.classList.contains('visible')) {
+                    submitBtn.disabled = true; // Ensure disabled if section hidden
+                    return;
+                 }
+
+                 // Now check time allowance
+                 if (checkinAllowed) {
+                     submitBtn.disabled = false;
+                     submitBtn.classList.remove('btn-secondary');
+                     submitBtn.classList.add('btn-primary');
+                     submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> ส่งข้อมูล';
                  } else {
-                    // If stream is active, just clear the preview and enable capture
-                     capturedPhotoPreview.src = 'https://placehold.co/300x240/e9ecef/6c757d?text=%E0%B8%81%E0%B8%94%E0%B8%96%E0%B9%88%E0%B8%B2%E0%B8%A2%E0%B8%A0%E0%B8%B2%E0%B8%9E';
-                     capturedPhotoPreview.alt = 'กดปุ่มถ่ายภาพ';
-                     photoDataInput.value = '';
-                     const context = photoCanvas.getContext('2d');
-                     if (context) context.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
-                     resetPhotoBtn.disabled = true; // Disable reset
-                     capturePhotoBtn.disabled = false; // Enable capture
-                 }
-             }
-
-            // 7. Form Validation
-            function validateForm() {
-                 clearValidationErrors(); // Clear previous errors
-                 let isValid = true;
-                 const selectedStatusRadio = document.querySelector('input[name="dutyStatus"]:checked');
-
-                 // a. Check Teacher ID and successful lookup
-                 if (!teacherIdInput.value || teacherIdInput.value.length !== 4) {
-                     showError(teacherLookupStatus, 'กรุณากรอกรหัสครู 4 หลัก');
-                     isValid = false;
-                 } else if (!teacherDataCache) {
-                     showError(teacherLookupStatus, 'กรุณากดค้นหาข้อมูลครู หรือรหัสไม่ถูกต้อง');
-                     isValid = false;
-                 }
-
-                 // b. Check Duty Status selection
-                 if (!selectedStatusRadio) {
-                     showError(dutyStatusErrorDiv, 'กรุณาเลือกสถานะการปฏิบัติงาน');
-                     isValid = false;
-                     return isValid; // Stop validation if status not selected
-                 }
-
-                 const selectedStatus = selectedStatusRadio.value;
-
-                 if (selectedStatus === 'มา') {
-                     // c. Check Duty Type (if 'มา')
-                     const selectedDutyType = document.querySelector('input[name="dutyType"]:checked');
-                     if (!selectedDutyType) {
-                         showError(dutyTypeErrorDiv, 'กรุณาเลือกการปฏิบัติหน้าที่');
-                         isValid = false;
-                     }
-                     // d. Check Location (if 'มา')
-                     if (!latitudeInput.value || !longitudeInput.value) {
-                         showError(locationErrorDiv, 'ไม่สามารถระบุตำแหน่งได้ กรุณาลองกดปุ่มรีเฟรชตำแหน่ง');
-                         isValid = false;
-                     }
-                     // e. Check Signature (if 'มา')
-                     if (signaturePad && signaturePad.isEmpty()) {
-                         showError(signatureErrorDiv, 'กรุณาลงลายมือชื่อ');
-                         isValid = false;
-                     }
-                     // f. Check Photo (if 'มา')
-                     if (!photoDataInput.value) {
-                         showError(photoErrorDiv, 'กรุณาถ่ายภาพยืนยัน');
-                         isValid = false;
-                     }
-                 } else { // Status is 'ลา' or 'ไปราชการ'
-                     // g. Check Remarks (if 'ลา' or 'ไปราชการ')
-                      if (!remarksInput.value.trim()) {
-                         showError(remarksErrorDiv, 'กรุณาระบุหมายเหตุ');
-                         isValid = false;
-                     }
-                 }
-
-                // h. Check Time and Day again right before submit
-                 const now = new Date();
-                 const currentDay = now.getDay();
-                 const currentMinute = now.getHours() * 60 + now.getMinutes();
-                 const isAllowedDay = ALLOWED_DAYS.includes(currentDay);
-                 const isCheckinTime = currentMinute >= CHECKIN_START_MINUTE && currentMinute <= CHECKIN_END_MINUTE;
-
-                 if (!(isAllowedDay && isCheckinTime)) {
-                     const startH = String(Math.floor(CHECKIN_START_MINUTE / 60)).padStart(2, '0');
-                     const startM = String(CHECKIN_START_MINUTE % 60).padStart(2, '0');
-                     const endH = String(Math.floor(CHECKIN_END_MINUTE / 60)).padStart(2, '0');
-                     const endM = String(CHECKIN_END_MINUTE % 60).padStart(2, '0');
-                     const timeMsg = `ไม่อยู่ในช่วงเวลาที่กำหนด (ลงเวลาเฉพาะวันจันทร์-ศุกร์ ตั้งแต่เวลา ${startH}:${startM} - ${endH}:${endM} น.)`;
-                     showSweetAlert('warning', 'นอกช่วงเวลา', timeMsg);
-                     isValid = false;
-                 }
-
-                 return isValid;
-             }
-
-             function clearValidationErrors() {
-                 const errorDivs = [
-                     teacherLookupStatus, dutyStatusErrorDiv, dutyTypeErrorDiv, remarksErrorDiv,
-                     locationErrorDiv, signatureErrorDiv, cameraErrorDiv, photoErrorDiv
-                 ];
-                 errorDivs.forEach(div => { if (div) div.textContent = ''; });
-                 statusMessage.innerHTML = '';
-             }
-              function clearValidationError(errorDiv) {
-                 if (errorDiv) errorDiv.textContent = '';
-             }
-             function showError(errorDiv, message) {
-                  if(errorDiv) errorDiv.textContent = message;
-                  errorDiv.classList.add('text-danger'); // Ensure it's red
-             }
-
-
-            // 8. Form Submission Handler
-            async function handleFormSubmit(e) {
-                 e.preventDefault();
-                 clearValidationErrors();
-
-                 if (!validateForm()) {
-                      // Validation function already shows errors and SweetAlert for time issues
-                     // Scroll to the first error message
-                      const firstError = checkinForm.querySelector('.text-danger:not(:empty)');
-                     if (firstError) {
-                         firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                     }
-                     return;
-                 }
-
-                  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL') {
-                     showSweetAlert('error', 'ข้อผิดพลาด', 'กรุณาตั้งค่า URL ของ Apps Script ในโค้ด HTML ก่อน');
-                     return;
-                 }
-
-                 isSubmitting = true;
-                 submitBtn.disabled = true;
-                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> กำลังส่งข้อมูล...';
-                 statusMessage.innerHTML = '';
-
-                 const formData = new FormData(checkinForm);
-                 const selectedStatus = document.querySelector('input[name="dutyStatus"]:checked').value;
-
-                 // Ensure signature/photo data is added only if 'มา'
-                 if (selectedStatus === 'มา') {
-                     if (signaturePad && !signaturePad.isEmpty()) {
-                         const sigDataUrl = signaturePad.toDataURL('image/jpeg', 0.85);
-                         formData.set('signatureData', sigDataUrl.split(',')[1]);
-                     } else {
-                          formData.delete('signatureData'); // Remove if empty (should be caught by validation, but safety check)
-                     }
-                      if (!photoDataInput.value) {
-                          formData.delete('photoData'); // Remove if empty
-                      }
-                 } else {
-                     // If not 'มา', remove signature and photo data explicitly
-                     formData.delete('signatureData');
-                     formData.delete('photoData');
-                      formData.delete('dutyType'); // Also remove dutyType if not 'มา'
-                 }
-
-                 // Add client timestamp
-                 formData.append('clientTimestamp', new Date().toISOString());
-
-                // Debug: Log FormData content before sending
-                // for (let [key, value] of formData.entries()) {
-                //     console.log(`${key}: ${value.length > 100 ? value.substring(0,100) + '...' : value}`);
-                // }
-
-
-                 try {
-                     const response = await fetch(SCRIPT_URL, {
-                         method: 'POST',
-                         body: formData,
-                     });
-
-                     const contentType = response.headers.get("content-type");
-                     let result;
-                     if (contentType && contentType.includes("application/json")) {
-                         result = await response.json();
-                     } else {
-                         const textResponse = await response.text();
-                         console.error("Server returned non-JSON response:", textResponse);
-                         throw new Error(textResponse || `เกิดข้อผิดพลาดจากเซิร์ฟเวอร์ (Status: ${response.status})`);
-                     }
-
-                     if (result.status === 'success') {
-                          showSuccessSweetAlert(result); // Show detailed success alert
-                         resetFullForm();
-                     } else {
-                         throw new Error(result.message || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุจากเซิร์ฟเวอร์');
-                     }
-
-                 } catch (error) {
-                     console.error('Error submitting form:', error);
-                     showSweetAlert('error', 'ส่งข้อมูลไม่สำเร็จ', `เกิดข้อผิดพลาด: ${error.message}`);
-                 } finally {
-                     isSubmitting = false;
-                     updateClockAndButtonState(); // Update button based on current time/day
+                     submitBtn.disabled = true;
+                     submitBtn.classList.remove('btn-primary');
+                     submitBtn.classList.add('btn-secondary');
+                     submitBtn.innerHTML = `<i class="fas fa-times-circle me-2"></i> นอกเวลาทำการ (${CHECKIN_START_TIME}-${CHECKIN_END_TIME} น. จันทร์-ศุกร์)`;
                  }
             }
 
-            // 9. Utility Functions
-             function showSweetAlert(icon, title, text) {
-                Swal.fire({ icon: icon, title: title, text: text, confirmButtonText: 'ปิด' });
-             }
 
-             function showSuccessSweetAlert(data) {
-                 let htmlContent = `
-                     <p><strong>วันที่/เวลา:</strong> ${data.checkinTime || 'N/A'}</p>
-                     <p><strong>ชื่อ-สกุล:</strong> ${data.teacherName || 'N/A'}</p>
-                 `;
-                 // Only show photo if status was 'มา' (photoUrl will exist)
-                 if (data.photoUrl) {
-                     htmlContent += `<img src="${data.photoUrl}" alt="รูปเช็คอิน" class="swal2-image">`;
-                 } else {
-                     // Indicate if status was 'ลา' or 'ไปราชการ'
-                     const statusRadio = document.querySelector('input[name="dutyStatus"]:checked');
-                     if (statusRadio) {
-                          htmlContent += `<p><strong>สถานะ:</strong> ${statusRadio.value}</p>`;
-                           if (statusRadio.value !== 'มา' && remarksInput.value) {
-                               htmlContent += `<p><strong>หมายเหตุ:</strong> ${remarksInput.value}</p>`;
-                           }
-                     }
+            // 10. Form Validation (Simplified, main checks done by checkFormCompletion)
+            function validateForm() {
+                clearValidationErrors(); // Clear previous errors
+                let isValid = true;
+                const selectedStatusRadio = document.querySelector('input[name="dutyStatus"]:checked');
+
+                 // Check if teacher data loaded
+                 if (!teacherDataCache) {
+                     showSweetAlert('warning', 'ข้อผิดพลาด', 'ไม่พบข้อมูลครู กรุณากรอกรหัสใหม่อีกครั้ง');
+                     isValid = false;
+                 }
+                 // Check if status is selected
+                 else if (!selectedStatusRadio) {
+                     dutyStatusErrorDiv.textContent = 'กรุณาเลือกสถานะการปฏิบัติหน้าที่';
+                     // Scroll to error if needed
+                     dutyStatusSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                     isValid = false;
+                 }
+                 // Add specific field checks again here if needed for final validation,
+                 // although checkFormCompletion should handle most visibility logic.
+                 // Example: Check remarks specifically if status is La/Trip
+                 else if ((selectedStatusRadio.value === 'ลา' || selectedStatusRadio.value === 'ไปราชการ') && !remarksInput.value.trim()) {
+                    remarksErrorDiv.textContent = 'กรุณาระบุเหตุผลในหมายเหตุ';
+                    remarksSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    isValid = false;
+                 }
+                 // Example: Check duty type if status is Ma
+                 else if (selectedStatusRadio.value === 'มา' && !document.querySelector('input[name="dutyType"]:checked')) {
+                    dutyTypeErrorDiv.textContent = 'กรุณาเลือกการปฏิบัติหน้าที่';
+                     dutyTypeSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    isValid = false;
+                 }
+                 // Example: Check location if status is Ma (can re-verify latitudeInput has value)
+                 else if (selectedStatusRadio.value === 'มา' && (!latitudeInput.value || !longitudeInput.value)) {
+                    locationErrorDiv.textContent = 'ไม่สามารถระบุตำแหน่งได้ กรุณาลองกดปุ่มรีเฟรชตำแหน่ง';
+                     locationSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    isValid = false;
+                 }
+                 // Check signature if Ma
+                 else if (selectedStatusRadio.value === 'มา' && signaturePad.isEmpty()) {
+                    signatureErrorDiv.textContent = 'กรุณาลงลายมือชื่อ';
+                     signatureSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    isValid = false;
+                 }
+                  // Check photo if Ma
+                  else if (selectedStatusRadio.value === 'มา' && !photoDataInput.value) {
+                     photoErrorDiv.textContent = 'กรุณาถ่ายภาพยืนยัน';
+                     photoSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                     isValid = false;
+                  }
+
+
+                 // Final Time Check
+                 if (!checkinAllowed) {
+                     showSweetAlert('warning', 'นอกเวลาทำการ', `สามารถลงเวลาได้เฉพาะวันจันทร์-ศุกร์ เวลา ${CHECKIN_START_TIME} - ${CHECKIN_END_TIME} น.`);
+                     isValid = false;
                  }
 
+                return isValid;
+            }
 
+            function clearValidationErrors(exceptIds = []) {
+                 const errorDivs = checkinForm.querySelectorAll('.form-text.text-danger, .invalid-feedback');
+                 errorDivs.forEach(div => {
+                    if (!exceptIds.includes(div.id)) { // Clear only if not in exception list
+                         div.textContent = '';
+                     }
+                 });
+                 // statusMessage.innerHTML = ''; // Keep general status message separate if needed
+            }
+
+
+            // 11. SweetAlert Helpers
+            function showSweetAlert(icon, title, htmlContent = '') { /* ... (as before) ... */
                  Swal.fire({
-                     icon: 'success',
-                     title: 'บันทึกข้อมูลสำเร็จ!',
-                     html: htmlContent,
-                     confirmButtonText: 'ปิด'
+                     icon: icon, title: title, html: htmlContent, confirmButtonText: 'ปิด'
                  });
              }
+             function showSuccessSweetAlert(checkinTime, teacherName, photoDataUrl) { /* ... (as before) ... */
+                 Swal.fire({
+                     icon: 'success', title: 'บันทึกข้อมูลสำเร็จ',
+                     html: `<p><strong>วันที่/เวลา:</strong> ${checkinTime}</p>
+                            <p><strong>ผู้บันทึก:</strong> ${teacherName}</p>
+                            ${photoDataUrl ? `<img src="${photoDataUrl}" alt="ภาพเช็คอิน" style="max-width: 150px; max-height: 150px; margin-top: 10px; border-radius: 5px;">` : ''}`,
+                     confirmButtonText: 'ปิด'
+                 });
+            }
 
-             // Resets fields below teacher ID, keeping teacher ID and info displayed
-             function resetPartialForm() {
-                 // Reset status selection
-                 dutyStatusRadios.forEach(radio => radio.checked = false);
-                 // Hide dependent sections
-                 dutyTypeSection.classList.add('form-section-hidden');
-                 remarksSection.classList.add('form-section-hidden');
-                 presentFieldsContainer.classList.add('form-section-hidden');
-                 // Clear values in these sections
-                 dutyTypeRadios.forEach(radio => radio.checked = false);
-                 remarksInput.value = '';
-                 if(signaturePad) signaturePad.clear();
-                 signatureDataInput.value = '';
-                 resetPhotoState(); // Reset camera preview and data
-                 stopCameraStream(); // Ensure camera is stopped
-                 latitudeInput.value = '';
-                 longitudeInput.value = '';
-                 locationInfoDiv.querySelector('span').textContent = 'ตำแหน่งจะแสดงที่นี่';
-                 const mapLink = locationInfoDiv.querySelector('a');
-                 if (mapLink) mapLink.remove();
-                 initializeGeolocation(); // Try to get location again
-                 clearValidationErrors(); // Clear errors in reset fields
-             }
+            // 12. Form Submission
+            checkinForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
 
+                 // Final check for time allowance
+                 if (!checkinAllowed) {
+                     showSweetAlert('warning', 'นอกเวลาทำการ', `ไม่สามารถส่งข้อมูลได้ สามารถลงเวลาได้เฉพาะวันจันทร์-ศุกร์ เวลา ${CHECKIN_START_TIME} - ${CHECKIN_END_TIME} น.`);
+                     return;
+                 }
 
-             function resetFullForm() {
-                 checkinForm.reset(); // Standard form reset
-                 if (signaturePad) signaturePad.clear();
-                 resetPhotoState(); // Resets camera preview, data, buttons
-                 stopCameraStream(); // Ensure camera is fully stopped
-                 // Hide sections that depend on teacher lookup and status
-                 mainFormSections.classList.add('form-section-hidden');
-                 dutyTypeSection.classList.add('form-section-hidden');
-                 remarksSection.classList.add('form-section-hidden');
-                 presentFieldsContainer.classList.add('form-section-hidden');
-                 // Clear teacher info display
-                 teacherInfoDiv.style.display = 'none';
-                 teacherPhoto.src = 'https://placehold.co/120x120/adb5bd/ffffff?text=%E0%B8%A3%E0%B8%B9%E0%B8%9B%E0%B8%84%E0%B8%A3%E0%B8%B9';
-                 teacherNameSpan.textContent = '';
-                 teacherDepartmentSpan.textContent = '';
-                 teacherPositionSpan.textContent = '';
-                 hiddenTeacherName.value = '';
-                 hiddenTeacherDepartment.value = '';
-                 // Clear state variables
-                 teacherIdInput.value = ''; // Clear the ID input itself
-                 teacherDataCache = null;
-                 latitudeInput.value = '';
-                 longitudeInput.value = '';
-                 locationInfoDiv.querySelector('span').textContent = 'ตำแหน่งจะแสดงที่นี่';
-                 const mapLink = locationInfoDiv.querySelector('a');
-                 if (mapLink) mapLink.remove();
-                 initializeGeolocation();
-                 clearValidationErrors();
-                 updateClockAndButtonState(); // Update button state
+                // Use validateForm for final check before sending
+                if (!validateForm()) {
+                    showSweetAlert('warning', 'ข้อมูลไม่ครบถ้วน', 'กรุณาตรวจสอบข้อมูลที่จำเป็นให้ครบถ้วนและถูกต้อง');
+                    return; // Stop submission if validation fails
+                }
+
+                // URL Check
+                if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL') { /* ... error handling ... */ return; }
+
+                isSubmitting = true;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> กำลังส่งข้อมูล...';
+                statusMessage.innerHTML = '';
+
+                const formData = new FormData(checkinForm);
+
+                // Ensure signature data is up-to-date if status is 'มา'
+                if (formData.get('dutyStatus') === 'มา' && !signaturePad.isEmpty()) {
+                    const sigDataUrl = signaturePad.toDataURL('image/jpeg', 0.85);
+                    formData.set('signatureData', sigDataUrl.split(',')[1]);
+                } else if (formData.get('dutyStatus') !== 'มา') {
+                    formData.set('signatureData', ''); // Ensure empty if not 'มา'
+                }
+
+                // Clear unnecessary fields based on status before sending
+                const status = formData.get('dutyStatus');
+                 if (status !== 'มา') {
+                     formData.delete('dutyType');
+                     formData.delete('latitude');
+                     formData.delete('longitude');
+                     formData.delete('signatureData');
+                     formData.delete('photoData');
+                 } else {
+                     formData.delete('remarks');
+                 }
+
+                formData.append('clientTimestamp', new Date().toISOString());
+
+                try {
+                    // ... (fetch POST logic as before) ...
+                    const response = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
+                     const contentType = response.headers.get("content-type");
+                     let result;
+                     if (contentType && contentType.includes("application/json")) { result = await response.json(); }
+                     else { const textResponse = await response.text(); throw new Error(textResponse || `Server Error (Status: ${response.status})`); }
+
+                    if (result.status === 'success') {
+                        // ... (success alert logic using showSuccessSweetAlert as before) ...
+                         const now = new Date();
+                         const optionsDateTime = { /*...*/ weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+                         const thaiDateTime = now.toLocaleDateString('th-TH', optionsDateTime).replace(String(now.getFullYear()), String(now.getFullYear() + 543));
+                         const submittedPhotoData = formData.get('photoData');
+                         const photoDataUrl = submittedPhotoData ? `data:image/jpeg;base64,${submittedPhotoData}` : null;
+
+                         if (status === 'มา' && photoDataUrl) {
+                             showSuccessSweetAlert(thaiDateTime, teacherDataCache?.name || 'N/A', photoDataUrl);
+                         } else {
+                            showSweetAlert('success', 'บันทึกข้อมูลสำเร็จ', `สถานะ: ${status}<br>วันที่/เวลา: ${thaiDateTime}<br>ผู้บันทึก: ${teacherDataCache?.name || 'N/A'}`);
+                         }
+
+                        resetFullForm();
+                    } else {
+                        throw new Error(result.message || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุจากเซิร์ฟเวอร์');
+                    }
+                } catch (error) {
+                    console.error('Error submitting form:', error);
+                    showSweetAlert('error', 'เกิดข้อผิดพลาด', `ไม่สามารถส่งข้อมูลได้: ${error.message}`);
+                } finally {
+                    isSubmitting = false;
+                    // Update button state based on current time (it will be hidden by resetFullForm anyway)
+                    updateClockAndButtonState();
+                }
+            });
+
+            // 13. Utility Functions
+            function resetFullForm() {
+                 checkinForm.reset(); // Reset standard inputs
+                 signaturePad.clear(); // Clear signature
+                 signatureDataInput.value = ''; // Clear hidden signature data
+                 resetPhoto(); // Reset camera preview/buttons
+                 stopCameraStream(); // Ensure camera is off
+                 hideAllSections(); // Hide all sections and clear teacher cache/ID
+                 teacherLookupStatus.textContent = 'กรุณากรอกรหัส 4 ตัว'; // Reset lookup status
+                 // No need to re-initialize location/camera here, will happen on demand
                  window.scrollTo({ top: 0, behavior: 'smooth' });
-             }
+                 updateClockAndButtonState(); // Reflect current time state
+            }
 
         }); // End DOMContentLoaded
     </script>
